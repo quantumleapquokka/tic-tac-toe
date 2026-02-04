@@ -248,7 +248,21 @@ std::string TicTacToe::stateString() const
     // remember that player numbers are zero-based, so add 1 to get '1' or '2'
     // if the bit is null, add '0' to the string
     // finally, return the constructed string
-    return "000000000";
+    std::string s;
+    s.reserve(9);
+
+    for (int y = 0; y < 3; y++) {
+        for (int x = 0; x < 3; x++) {
+            Bit* b = _grid[y][x].bit();
+            if (!b) {
+                s.push_back('0');
+            } else {
+                int p = b->getOwner()->playerNumber();
+                s.push_back(char('1' + p));
+            }
+        }
+    }
+    return s;
 }
 
 //
