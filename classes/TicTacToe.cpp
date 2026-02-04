@@ -284,34 +284,97 @@ void TicTacToe::setStateString(const std::string &s)
 // this is the function that will be called by the AI
 //
 
-// extra credit: added some ai to generate random move
+int TicTacToe::winnerAlg(const std::string& s)
+{
+    static const int winPattern[8][3] = {
+        {0, 1, 2}, // Row
+        {3, 4, 5},
+        {6, 7, 8},
+        {0, 3, 6}, // Column
+        {1, 4, 7},
+        {2, 5, 8},
+        {0, 4, 8}, // Diagonal
+        {2, 4, 6}
+    };
+
+    for (const auto& line : winPattern) {
+        char a = s[line[0]];
+        if (a != '0' && a == s[line[1]] && a == s[line[2]]) {
+            return (a - '1');
+        }
+    }
+
+    return -1;
+}
+
+int TicTacToe::negamax(std::string& s, int player) {
+    int w = winnerAlg(s);
+    if (w != -1) return (w == player) ? 1 : -1;
+
+    bool full = true;
+    for (char c : s) {
+        if (c == '0') {
+            full = false; 
+            break;
+        }
+    }
+    if (full) return 0;
+
+    int best = -2;
+    char h = (player == 0) ? '1' : '2';
+
+    for (int i = 0; i < 9; i++) {
+        if (s[i] != '0') continue;
+
+        s[i] = h;
+        int score = -negamax(s, 1 - player);
+        s[i] = '0';
+
+        if (score > best) best = score;
+    }
+
+    return best;
+}
+
 void TicTacToe::updateAI() 
 {
     // we will implement the AI in the next assignment!
     if (checkForWinner() != nullptr || checkForDraw()) return;
 
-    std::vector<BitHolder*> empty;
-    empty.reserve(9);
+    int turn = getCurrentPlayer()->playerNumber();
+    std::string s = stateString();
 
-    for (int y = 0; y < 3; y++) {
-        for (int x = 0; x < 3; x++){
-            if (!_grid[y][x].bit()) {
-                empty.push_back(&_grid[y][x]);
-            }
+    char h = (turn == 0) ? '1' : '2';
+
+    int bestScore = -2;
+    int bestMove = -1;
+
+    for (int i = 0; i < 9; i++) {
+        if (s[i] != '0') continue;
+
+        s[i] = h;
+        int score = -negamax(s, 1 - turn);
+        s[i] = '0';
+
+        if (score > bestScore) {
+            bestScore = score;
+            bestMove = i;
         }
     }
-    if (empty.empty()) return;
 
-    static std::mt19937 rng(std::random_device{}());
-    std::uniform_int_distribution<int> dist(0, (int)empty.size() - 1);
+    if (bestMove < 0) return;
 
-    BitHolder* choice = empty[dist(rng)];
+    int x = bestMove % 3;
+    int y = bestMove / 3;
+    
 
-    int turn = getCurrentPlayer()->playerNumber();
+    BitHolder* choice = &_grid[y][x];
+
+    if (choice->bit()) return;
+
     Bit* newBit = PieceForPlayer(turn);
     newBit->setPosition(choice->getPosition());
     choice->setBit(newBit);
 
     endTurn();
 }
-
